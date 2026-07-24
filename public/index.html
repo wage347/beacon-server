@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Beacon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg: #0f151b;
+    --panel: #171f27;
+    --panel-2: #1e2731;
+    --panel-3: #263140;
+    --border: #2a3542;
+    --accent: #ffb454;
+    --accent-soft: rgba(255,180,84,0.14);
+    --accent-2: #4fa8c9;
+    --text: #e9edf1;
+    --muted: #7c8a99;
+    --muted-2: #58636e;
+    --danger: #e8574a;
+    --online: #6fcf97;
+    --idle: #ffb454;
+    --dnd: #e8574a;
+    --offline: #55606b;
+    --radius: 12px;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  #app{height:100vh;width:100vw;position:relative;}
+  ::selection{background:var(--accent-soft);}
+  button{font-family:inherit;cursor:pointer;}
+  input, textarea, select{font-family:inherit;}
+  a{color:var(--accent-2);}
+
+  /* ---------- scrollbars ---------- */
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:8px;}
+
+  /* ---------- beacon logo ---------- */
+  .beacon-mark{
+    position:relative;
+    width:36px;height:36px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 40%, #22303c, #131b22 70%);
+    flex-shrink:0;
+  }
+  .beacon-mark::before{
+    content:'';
+    position:absolute;inset:-6px;
+    border-radius:50%;
+    background:conic-gradient(from 0deg, transparent 0deg, var(--accent) 18deg, transparent 40deg, transparent 360deg);
+    animation:sweep 4s linear infinite;
+    opacity:0.85;
+  }
+  .beacon-mark span{position:relative;z-index:1;font-size:16px;}
+  @keyframes sweep{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .beacon-mark::before{animation:none;}
+  }
+
+  .logo-lockup{display:flex;align-items:center;gap:10px;}
+  .logo-lockup .wordmark{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:0.3px;}
+  .logo-lockup .tagline{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:0.5px;}
+
+  /* ---------- AUTH SCREEN ---------- */
+  .auth-wrap{
+    height:100%;width:100%;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(255,180,84,0.07), transparent 60%),
+      radial-gradient(1000px 500px at 100% 110%, rgba(79,168,201,0.08), transparent 60%),
+      var(--bg);
+    padding:20px;
+  }
+  .auth-card{
+    width:380px;max-width:100%;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:32px 28px 28px;
+  }
+  .auth-header{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px;text-align:center;}
+  .auth-header .logo-lockup{flex-direction:column;gap:8px;}
+  .auth-tabs{display:flex;background:var(--panel-2);border-radius:9px;padding:3px;margin-bottom:20px;}
+  .auth-tab{flex:1;text-align:center;padding:8px 0;border:none;background:transparent;color:var(--muted);border-radius:7px;font-weight:600;font-size:13px;transition:all .15s;}
+  .auth-tab.active{background:var(--panel-3);color:var(--text);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:6px;}
+  .field input, .field textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus, .field textarea:focus{border-color:var(--accent);}
+  .field-hint{font-size:11.5px;color:var(--muted-2);margin-top:5px;}
+  .btn{
+    width:100%;
+    background:var(--accent);
+    color:#231607;
+    border:none;
+    padding:11px 0;
+    border-radius:8px;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.2px;
+    transition:filter .15s, transform .05s;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(0.99);}
+  .btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;}
+  .btn-secondary{background:var(--panel-3);color:var(--text);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-sm{width:auto;padding:7px 14px;font-size:12.5px;border-radius:7px;}
+  .auth-error{
+    background:rgba(232,87,74,0.12);
+    border:1px solid rgba(232,87,74,0.35);
+    color:#ff9a8f;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .auth-note{font-size:11.5px;color:var(--muted-2);text-align:center;margin-top:16px;line-height:1.5;}
+
+  /* ---------- MAIN APP LAYOUT ---------- */
+  .shell{display:flex;height:100%;}
+  .rail{
+    width:74px;
+    background:#0c1115;
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;align-items:center;
+    padding:16px 0;
+    gap:14px;
+  }
+  .sidebar{
+    width:268px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    min-width:0;
+  }
+  .sidebar-header{
+    padding:16px 16px 12px;
+    border-bottom:1px solid var(--border);
+  }
+  .sidebar-header .logo-lockup .wordmark{font-size:16px;}
+  .sidebar-search{margin-top:12px;}
+  .sidebar-search input{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);
+    color:var(--text);padding:8px 10px;border-radius:7px;font-size:12.5px;outline:none;
+  }
+  .dm-list{flex:1;overflow-y:auto;padding:10px 8px;}
+  .dm-section-label{
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;
+    color:var(--muted);padding:8px 10px 6px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .add-friend-btn{
+    background:transparent;border:none;color:var(--muted);font-size:16px;line-height:1;padding:2px 6px;border-radius:5px;
+  }
+  .add-friend-btn:hover{background:var(--panel-3);color:var(--text);}
+  .dm-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:8px;
+    cursor:pointer;color:var(--text);
+    position:relative;
+  }
+  .dm-item:hover{background:var(--panel-2);}
+  .dm-item.active{background:var(--panel-3);}
+  .dm-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dm-status-text{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .req-badge{
+    background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;
+    border-radius:20px;padding:1px 6px;margin-left:auto;
+  }
+  .empty-hint{padding:14px 10px;font-size:12.5px;color:var(--muted-2);line-height:1.5;}
+
+  .avatar{
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;flex-shrink:0;position:relative;
+    font-family:var(--font-display);font-weight:600;
+  }
+  .avatar-28{width:28px;height:28px;font-size:13px;}
+  .avatar-36{width:36px;height:36px;font-size:16px;}
+  .avatar-44{width:44px;height:44px;font-size:19px;}
+  .avatar-64{width:64px;height:64px;font-size:27px;}
+  .presence-dot{
+    position:absolute;bottom:-1px;right:-1px;
+    width:10px;height:10px;border-radius:50%;
+    border:2px solid var(--panel);
+  }
+  .presence-dot.on-rail{border-color:#0c1115;}
+
+  .me-card{
+    margin-top:auto;
+    border-top:1px solid var(--border);
+    padding:10px 12px;
+    display:flex;align-items:center;gap:10px;
+    cursor:pointer;
+  }
+  .me-card:hover{background:var(--panel-2);}
+  .me-card .who{min-width:0;flex:1;}
+  .me-card .name{font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .me-card .status-label{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .me-card .gear{color:var(--muted);font-size:15px;padding:6px;}
+  .rail-item{
+    width:44px;height:44px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);cursor:pointer;color:var(--muted);
+    transition:border-radius .15s, background .15s;
+    border:1px solid transparent;
+  }
+  .rail-item.active, .rail-item:hover{border-radius:12px;background:var(--panel-3);color:var(--text);}
+  .rail-spacer{flex:1;}
+  .rail-logout{color:var(--muted);}
+  .rail-logout:hover{color:var(--danger);}
+
+  /* ---------- CHAT PANEL ---------- */
+  .chat{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);}
+  .chat-header{
+    height:58px;flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;
+    padding:0 20px;
+  }
+  .chat-header .cname{font-family:var(--font-display);font-weight:600;font-size:15.5px;}
+  .chat-header .cstatus{font-size:12px;color:var(--muted);}
+  .chat-empty{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--muted);gap:14px;text-align:center;padding:20px;
+  }
+  .chat-empty .beacon-mark{width:56px;height:56px;}
+  .chat-empty .beacon-mark span{font-size:24px;}
+  .chat-empty h3{font-family:var(--font-display);color:var(--text);margin:0;font-size:18px;}
+  .chat-empty p{margin:0;max-width:320px;font-size:13.5px;line-height:1.6;}
+
+  .messages{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+  .msg-row{display:flex;gap:12px;max-width:100%;}
+  .msg-row .avatar{margin-top:2px;}
+  .msg-body{min-width:0;}
+  .msg-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;}
+  .msg-author{font-weight:700;font-size:14px;}
+  .msg-time{font-family:var(--font-mono);font-size:10.5px;color:var(--muted-2);}
+  .msg-text{font-size:14.5px;line-height:1.55;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+  .msg-file{
+    margin-top:6px;display:inline-flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--border);border-radius:9px;
+    padding:9px 12px;max-width:340px;text-decoration:none;color:var(--text);
+  }
+  .msg-file:hover{border-color:var(--accent-2);}
+  .msg-file .fico{font-size:20px;}
+  .msg-file .finfo{min-width:0;}
+  .msg-file .fname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .msg-file .fsize{font-size:11px;color:var(--muted);}
+  .msg-image{margin-top:6px;max-width:320px;max-height:280px;border-radius:9px;border:1px solid var(--border);display:block;}
+  .day-divider{
+    display:flex;align-items:center;gap:10px;color:var(--muted-2);font-size:11px;
+    font-family:var(--font-mono);margin:6px 0;
+  }
+  .day-divider::before, .day-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .composer{padding:14px 20px 18px;flex-shrink:0;}
+  .composer-inner{
+    display:flex;align-items:flex-end;gap:8px;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:8px 8px 8px 12px;
+  }
+  .composer-inner:focus-within{border-color:var(--accent-2);}
+  .attach-btn{
+    background:transparent;border:none;color:var(--muted);font-size:19px;
+    padding:6px 8px;border-radius:8px;flex-shrink:0;
+  }
+  .attach-btn:hover{background:var(--panel-2);color:var(--accent);}
+  .composer textarea{
+    flex:1;background:transparent;border:none;color:var(--text);
+    resize:none;outline:none;font-size:14px;line-height:1.5;
+    max-height:120px;padding:6px 0;
+  }
+  .send-btn{
+    background:var(--accent);color:#231607;border:none;border-radius:8px;
+    padding:8px 16px;font-weight:700;font-size:13px;flex-shrink:0;
+  }
+  .send-btn:disabled{opacity:0.4;cursor:default;}
+  .file-preview{
+    display:flex;align-items:center;gap:8px;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:0 20px 8px;
+    font-size:12.5px;color:var(--text);
+  }
+  .file-preview .remove-file{background:transparent;border:none;color:var(--muted);font-size:15px;margin-left:auto;}
+  .file-preview .remove-file:hover{color:var(--danger);}
+
+  /* ---------- MODALS ---------- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(6,9,12,0.6);
+    display:flex;align-items:center;justify-content:center;z-index:50;
+    padding:20px;backdrop-filter:blur(2px);
+  }
+  .modal{
+    width:420px;max-width:100%;max-height:88vh;overflow-y:auto;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:24px;
+  }
+  .modal-title{font-family:var(--font-display);font-size:18px;font-weight:700;margin:0 0 4px;}
+  .modal-sub{font-size:12.5px;color:var(--muted);margin:0 0 18px;}
+  .modal-close-row{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .swatch-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .swatch{
+    width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  }
+  .swatch.selected{border-color:var(--text);}
+  .emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .emoji-opt{
+    width:34px;height:34px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);
+    font-size:16px;display:flex;align-items:center;justify-content:center;
+  }
+  .emoji-opt.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .presence-opt-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .presence-opt{
+    display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;
+    background:var(--panel-2);border:1px solid var(--border);font-size:12.5px;color:var(--text);
+  }
+  .presence-opt.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .presence-opt .dot{width:8px;height:8px;border-radius:50%;}
+
+  .req-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);}
+  .req-row:last-child{border-bottom:none;}
+  .req-row .who{flex:1;font-size:13.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .req-actions{display:flex;gap:6px;}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--panel-3);border:1px solid var(--border);color:var(--text);
+    padding:10px 18px;border-radius:9px;font-size:13px;z-index:100;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  }
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+
+  @media (max-width: 720px){
+    .sidebar{position:absolute;left:74px;top:0;bottom:0;z-index:20;transform:translateX(0);transition:transform .18s;}
+    .sidebar.hidden-mobile{transform:translateX(-110%);}
+    .chat{width:100%;}
+  }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+  "use strict";
+
+  /* ============================= STATE ============================= */
+  var state = {
+    screen: 'loading', // loading | auth | app
+    authTab: 'login',
+    authError: '',
+    token: localStorage.getItem('beacon_token') || null,
+    currentUser: null,
+    friends: [],
+    requests: [],
+    activeFriend: null,
+    messages: [],
+    pendingFile: null, // File object staged for upload
+    modal: null, // 'profile' | 'addFriend' | null
+    sidebarOpenMobile: false,
+    toast: null,
+  };
+
+  var COLORS = ['#ffb454','#4fa8c9','#6fcf97','#e8574a','#c084fc','#f472a6','#7c8794','#f2c14e'];
+  var EMOJIS = ['🙂','🚀','🌙','🔥','🐺','🎧','☕','🌊','🛰️','🎲','🌵','⚡'];
+  var PRESENCES = [
+    {key:'online', label:'Online', color:'var(--online)'},
+    {key:'idle', label:'Idle', color:'var(--idle)'},
+    {key:'dnd', label:'Do Not Disturb', color:'var(--dnd)'},
+    {key:'offline', label:'Invisible', color:'var(--offline)'},
+  ];
+
+  function presenceColor(key){
+    var p = PRESENCES.filter(function(x){return x.key===key;})[0];
+    return p ? p.color : 'var(--offline)';
+  }
+  function presenceLabel(key){
+    var p = PRESENCES.filter(function(x){return x.key===key;})[0];
+    return p ? p.label : 'Invisible';
+  }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function fmtSize(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+  function fmtDay(ts){
+    var d = new Date(ts);
+    return d.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
+  }
+  function showToast(msg){
+    state.toast = msg;
+    render();
+    setTimeout(function(){ state.toast = null; render(); }, 2600);
+  }
+
+  /* ============================= API HELPER ============================= */
+  async function api(path, opts){
+    opts = opts || {};
+    var headers = opts.headers || {};
+    if(state.token) headers['Authorization'] = 'Bearer ' + state.token;
+    var fetchOpts = Object.assign({}, opts, {headers: headers});
+    var res;
+    try{
+      res = await fetch('/api' + path, fetchOpts);
+    }catch(e){
+      throw new Error('Could not reach the server. Is it running?');
+    }
+    var data = null;
+    try{ data = await res.json(); }catch(e){ data = null; }
+    if(!res.ok){
+      throw new Error((data && data.error) || 'Something went wrong.');
+    }
+    return data;
+  }
+  async function apiJSON(path, method, body){
+    return api(path, {method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body||{})});
+  }
+
+  /* ============================= WEBSOCKET ============================= */
+  var ws = null;
+  function connectWS(){
+    if(ws) { try{ ws.close(); }catch(e){} }
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws?token=' + encodeURIComponent(state.token));
+    ws.onmessage = function(evt){
+      var payload;
+      try{ payload = JSON.parse(evt.data); }catch(e){ return; }
+      handleWSEvent(payload);
+    };
+    ws.onclose = function(){
+      // try to reconnect if still logged in
+      if(state.screen === 'app'){
+        setTimeout(function(){ if(state.screen === 'app') connectWS(); }, 2000);
+      }
+    };
+  }
+
+  function handleWSEvent(payload){
+    if(payload.type === 'new_message'){
+      var friend = state.activeFriend;
+      if(friend && payload.message.from.toLowerCase() === friend.username.toLowerCase()){
+        state.messages.push(payload.message);
+        render();
+        scrollMessagesToBottom();
+      } else {
+        showToast('New message from ' + payload.message.from);
+      }
+    } else if(payload.type === 'friend_request'){
+      refreshFriendsAndRequests().then(render);
+      showToast(payload.displayName + ' sent you a friend request.');
+    } else if(payload.type === 'friend_accept'){
+      refreshFriendsAndRequests().then(render);
+      showToast(payload.by + ' accepted your friend request.');
+    } else if(payload.type === 'presence'){
+      var u = payload.user;
+      state.friends = state.friends.map(function(f){
+        return f.username.toLowerCase() === u.username.toLowerCase() ? u : f;
+      });
+      if(state.activeFriend && state.activeFriend.username.toLowerCase() === u.username.toLowerCase()){
+        state.activeFriend = u;
+      }
+      render();
+    }
+  }
+
+  /* ============================= AUTH ============================= */
+  async function handleSignup(username, password, displayName){
+    state.authError = '';
+    try{
+      var data = await apiJSON('/signup', 'POST', {username: username, password: password, displayName: displayName});
+      await enterApp(data.token, data.user);
+    }catch(e){
+      state.authError = e.message;
+      render();
+    }
+  }
+
+  async function handleLogin(username, password){
+    state.authError = '';
+    try{
+      var data = await apiJSON('/login', 'POST', {username: username, password: password});
+      await enterApp(data.token, data.user);
+    }catch(e){
+      state.authError = e.message;
+      render();
+    }
+  }
+
+  async function enterApp(token, user){
+    state.token = token;
+    localStorage.setItem('beacon_token', token);
+    state.currentUser = user;
+    state.screen = 'app';
+    render();
+    connectWS();
+    await refreshFriendsAndRequests();
+    render();
+  }
+
+  function handleLogout(){
+    localStorage.removeItem('beacon_token');
+    if(ws){ try{ ws.close(); }catch(e){} ws = null; }
+    state.token = null;
+    state.currentUser = null;
+    state.friends = [];
+    state.requests = [];
+    state.activeFriend = null;
+    state.messages = [];
+    state.screen = 'auth';
+    state.authTab = 'login';
+    render();
+  }
+
+  async function tryResumeSession(){
+    if(!state.token){
+      state.screen = 'auth';
+      render();
+      return;
+    }
+    try{
+      var user = await api('/me');
+      state.currentUser = user;
+      state.screen = 'app';
+      render();
+      connectWS();
+      await refreshFriendsAndRequests();
+      render();
+    }catch(e){
+      state.token = null;
+      localStorage.removeItem('beacon_token');
+      state.screen = 'auth';
+      render();
+    }
+  }
+
+  /* ============================= FRIENDS ============================= */
+  async function refreshFriendsAndRequests(){
+    try{
+      var friends = await api('/friends');
+      var requests = await api('/friends/requests');
+      state.friends = friends;
+      state.requests = requests;
+      if(state.activeFriend){
+        var updated = friends.filter(function(f){ return f.username === state.activeFriend.username; })[0];
+        if(updated) state.activeFriend = updated;
+      }
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  async function sendFriendRequest(targetUsername){
+    targetUsername = (targetUsername||'').trim();
+    if(!targetUsername){ showToast('Enter a username to add.'); return; }
+    try{
+      await apiJSON('/friends/request', 'POST', {username: targetUsername});
+      showToast('Request sent.');
+      state.modal = null;
+      await refreshFriendsAndRequests();
+      render();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  async function acceptRequest(fromUsername){
+    try{
+      await apiJSON('/friends/requests/' + encodeURIComponent(fromUsername) + '/accept', 'POST', {});
+      await refreshFriendsAndRequests();
+      render();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  async function declineRequest(fromUsername){
+    try{
+      await apiJSON('/friends/requests/' + encodeURIComponent(fromUsername) + '/decline', 'POST', {});
+      await refreshFriendsAndRequests();
+      render();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  /* ============================= MESSAGING ============================= */
+  async function openConversation(friend){
+    state.activeFriend = friend;
+    state.sidebarOpenMobile = false;
+    state.messages = [];
+    render();
+    try{
+      var msgs = await api('/messages/' + encodeURIComponent(friend.username));
+      state.messages = msgs;
+      render();
+      scrollMessagesToBottom();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  async function sendMessage(text, file){
+    text = (text||'').trim();
+    if(!text && !file) return;
+    var friend = state.activeFriend;
+    var formData = new FormData();
+    formData.append('text', text);
+    if(file) formData.append('file', file);
+    try{
+      var msg = await api('/messages/' + encodeURIComponent(friend.username), {method:'POST', body: formData});
+      state.messages.push(msg);
+      state.pendingFile = null;
+      render();
+      scrollMessagesToBottom();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  function scrollMessagesToBottom(){
+    setTimeout(function(){
+      var el = document.getElementById('messagesPane');
+      if(el) el.scrollTop = el.scrollHeight;
+    }, 30);
+  }
+
+  /* ============================= PROFILE ============================= */
+  async function saveProfile(fields){
+    try{
+      var user = await apiJSON('/me', 'PUT', fields);
+      state.currentUser = user;
+      state.modal = null;
+      showToast('Profile updated.');
+      render();
+    }catch(e){
+      showToast(e.message);
+    }
+  }
+
+  /* ============================= RENDER ============================= */
+  var root = document.getElementById('app');
+
+  function render(){
+    if(state.screen === 'loading'){
+      root.innerHTML = '<div class="auth-wrap"><div class="beacon-mark" style="width:56px;height:56px;"><span>🛰️</span></div></div>';
+      return;
+    }
+    if(state.screen === 'auth'){
+      renderAuth();
+      bindAuthEvents();
+      return;
+    }
+    renderApp();
+    bindAppEvents();
+  }
+
+  function renderAuth(){
+    var isLogin = state.authTab === 'login';
+    root.innerHTML =
+    '<div class="auth-wrap">' +
+      '<div class="auth-card">' +
+        '<div class="auth-header">' +
+          '<div class="logo-lockup">' +
+            '<div class="beacon-mark"><span>🛰️</span></div>' +
+            '<div>' +
+              '<div class="wordmark">Beacon</div>' +
+              '<div class="tagline">STAY IN THE LIGHT</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="auth-tabs">' +
+          '<button class="auth-tab' + (isLogin?' active':'') + '" data-tab="login">Log in</button>' +
+          '<button class="auth-tab' + (!isLogin?' active':'') + '" data-tab="signup">Sign up</button>' +
+        '</div>' +
+        (state.authError ? '<div class="auth-error">' + escapeHtml(state.authError) + '</div>' : '') +
+        (isLogin ?
+          '<form id="loginForm">' +
+            '<div class="field"><label for="loginUser">Username</label><input id="loginUser" autocomplete="username" placeholder="e.g. river_fox" /></div>' +
+            '<div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" /></div>' +
+            '<button type="submit" class="btn">Enter Beacon</button>' +
+          '</form>'
+        :
+          '<form id="signupForm">' +
+            '<div class="field"><label for="suDisplay">Display name</label><input id="suDisplay" placeholder="What should people call you?" /></div>' +
+            '<div class="field"><label for="suUser">Username</label><input id="suUser" autocomplete="username" placeholder="letters, numbers, underscore" /></div>' +
+            '<div class="field"><label for="suPass">Password</label><input id="suPass" type="password" autocomplete="new-password" placeholder="At least 4 characters" /></div>' +
+            '<button type="submit" class="btn">Create account</button>' +
+          '</form>'
+        ) +
+        '<div class="auth-note">Your account lives on this server\'s own database — passwords are hashed, not stored as plain text.</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function bindAuthEvents(){
+    var tabs = root.querySelectorAll('.auth-tab');
+    tabs.forEach(function(t){
+      t.onclick = function(){
+        state.authTab = t.getAttribute('data-tab');
+        state.authError = '';
+        render();
+      };
+    });
+    var loginForm = document.getElementById('loginForm');
+    if(loginForm){
+      loginForm.onsubmit = function(e){
+        e.preventDefault();
+        var u = document.getElementById('loginUser').value;
+        var p = document.getElementById('loginPass').value;
+        handleLogin(u, p);
+      };
+    }
+    var signupForm = document.getElementById('signupForm');
+    if(signupForm){
+      signupForm.onsubmit = function(e){
+        e.preventDefault();
+        var d = document.getElementById('suDisplay').value;
+        var u = document.getElementById('suUser').value;
+        var p = document.getElementById('suPass').value;
+        handleSignup(u, p, d);
+      };
+    }
+  }
+
+  function avatarHtml(user, sizeClass, showPresence, onRail){
+    var color = user.avatarColor || '#7c8794';
+    var emoji = user.avatarEmoji || '🙂';
+    var dot = '';
+    if(showPresence){
+      dot = '<span class="presence-dot' + (onRail?' on-rail':'') + '" style="background:' + presenceColor(user.presence||'online') + '"></span>';
+    }
+    return '<div class="avatar ' + sizeClass + '" style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '55;">' +
+      '<span>' + emoji + '</span>' + dot +
+    '</div>';
+  }
+
+  function renderApp(){
+    var me = state.currentUser;
+    var friend = state.activeFriend;
+
+    var dmItems = state.friends.map(function(f){
+      var active = friend && friend.username === f.username;
+      return '<div class="dm-item' + (active?' active':'') + '" data-username="' + escapeHtml(f.username) + '">' +
+        avatarHtml(f, 'avatar-36', true, false) +
+        '<div style="min-width:0;">' +
+          '<div class="dm-name">' + escapeHtml(f.displayName) + '</div>' +
+          '<div class="dm-status-text">' + escapeHtml(f.statusText || presenceLabel(f.presence||'online')) + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var reqCount = state.requests.length;
+
+    var chatHtml;
+    if(!friend){
+      chatHtml =
+        '<div class="chat-empty">' +
+          '<div class="beacon-mark"><span>🛰️</span></div>' +
+          '<h3>No conversation selected</h3>' +
+          '<p>Pick someone from your list on the left, or add a new friend by username to start a conversation.</p>' +
+          '<button class="btn btn-secondary btn-sm" id="emptyAddFriendBtn">Add a friend</button>' +
+        '</div>';
+    } else {
+      var msgsHtml = renderMessages();
+      chatHtml =
+        '<div class="chat-header">' +
+          '<button class="attach-btn" id="mobileBackBtn" aria-label="Back to friends">←</button>' +
+          avatarHtml(friend, 'avatar-28', true, false) +
+          '<div>' +
+            '<div class="cname">' + escapeHtml(friend.displayName) + '</div>' +
+            '<div class="cstatus">' + escapeHtml(friend.statusText || presenceLabel(friend.presence||'online')) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="messages" id="messagesPane">' + msgsHtml + '</div>' +
+        (state.pendingFile ?
+          '<div class="file-preview">' +
+            '<span>' + (state.pendingFile.type.indexOf('image/')===0 ? '🖼️' : '📎') + '</span>' +
+            '<span>' + escapeHtml(state.pendingFile.name) + ' · ' + fmtSize(state.pendingFile.size) + '</span>' +
+            '<button class="remove-file" id="removeFileBtn" aria-label="Remove attachment">✕</button>' +
+          '</div>' : '') +
+        '<div class="composer">' +
+          '<div class="composer-inner">' +
+            '<button class="attach-btn" id="attachBtn" title="Attach a file" aria-label="Attach a file">📎</button>' +
+            '<input type="file" id="fileInput" class="visually-hidden" />' +
+            '<textarea id="msgInput" rows="1" placeholder="Message ' + escapeHtml(friend.displayName) + '"></textarea>' +
+            '<button class="send-btn" id="sendBtn">Send</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    root.innerHTML =
+    '<div class="shell">' +
+      '<div class="rail">' +
+        '<div class="beacon-mark"><span>🛰️</span></div>' +
+        '<div class="rail-spacer" style="flex:0 0 6px;"></div>' +
+        '<div class="rail-item active" title="Direct Messages">💬</div>' +
+        '<div class="rail-spacer"></div>' +
+        avatarHtml(me, 'avatar-44', true, true).replace('<div class="avatar', '<div id="railAvatar" class="avatar') +
+        '<button class="rail-item rail-logout" id="logoutBtn" title="Log out" aria-label="Log out" style="margin-top:6px;">⏻</button>' +
+      '</div>' +
+      '<div class="sidebar' + (state.sidebarOpenMobile? '' : ' hidden-mobile') + '" id="sidebarPane">' +
+        '<div class="sidebar-header">' +
+          '<div class="logo-lockup"><div><div class="wordmark">Beacon</div></div></div>' +
+        '</div>' +
+        '<div class="dm-list">' +
+          '<div class="dm-section-label"><span>Direct Messages</span>' +
+            '<button class="add-friend-btn" id="openAddFriendBtn" title="Add a friend" aria-label="Add a friend">+</button>' +
+          '</div>' +
+          (reqCount > 0 ?
+            '<div class="dm-item" id="openRequestsBtn"><div class="avatar avatar-36" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);">🔔</div>' +
+              '<div style="min-width:0;"><div class="dm-name">Friend requests</div><div class="dm-status-text">Waiting for a reply</div></div>' +
+              '<span class="req-badge">' + reqCount + '</span></div>'
+            : '') +
+          (state.friends.length ? dmItems : '<div class="empty-hint">No connections yet. Tap + above to add someone by username.</div>') +
+        '</div>' +
+        '<div class="me-card" id="openProfileBtn">' +
+          avatarHtml(me, 'avatar-36', true, false) +
+          '<div class="who">' +
+            '<div class="name">' + escapeHtml(me.displayName) + '</div>' +
+            '<div class="status-label">' + escapeHtml(me.statusText || presenceLabel(me.presence||'online')) + '</div>' +
+          '</div>' +
+          '<span class="gear">⚙</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="chat">' + chatHtml + '</div>' +
+    '</div>' +
+    renderModal() +
+    (state.toast ? '<div class="toast">' + escapeHtml(state.toast) + '</div>' : '');
+  }
+
+  function renderMessages(){
+    var me = state.currentUser;
+    var friend = state.activeFriend;
+    if(!state.messages.length){
+      return '<div class="empty-hint" style="padding:30px 10px;text-align:center;">No messages yet — say hello to ' + escapeHtml(friend.displayName) + '.</div>';
+    }
+    var html = '';
+    var lastDay = '';
+    state.messages.forEach(function(m){
+      var day = fmtDay(m.ts);
+      if(day !== lastDay){
+        html += '<div class="day-divider">' + day + '</div>';
+        lastDay = day;
+      }
+      var author = m.from.toLowerCase() === me.username.toLowerCase() ? me : friend;
+      var fileHtml = '';
+      if(m.file){
+        if(m.file.type && m.file.type.indexOf('image/') === 0){
+          fileHtml = '<img class="msg-image" src="' + m.file.url + '" alt="' + escapeHtml(m.file.name) + '" />';
+        } else {
+          fileHtml = '<a class="msg-file" href="' + m.file.url + '" download="' + escapeHtml(m.file.name) + '">' +
+            '<span class="fico">📄</span>' +
+            '<span class="finfo"><div class="fname">' + escapeHtml(m.file.name) + '</div><div class="fsize">' + fmtSize(m.file.size) + '</div></span>' +
+          '</a>';
+        }
+      }
+      html += '<div class="msg-row">' +
+        avatarHtml(author, 'avatar-36', false, false) +
+        '<div class="msg-body">' +
+          '<div class="msg-meta"><span class="msg-author">' + escapeHtml(author.displayName) + '</span><span class="msg-time">' + fmtTime(m.ts) + '</span></div>' +
+          (m.text ? '<div class="msg-text">' + escapeHtml(m.text) + '</div>' : '') +
+          fileHtml +
+        '</div>' +
+      '</div>';
+    });
+    return html;
+  }
+
+  function renderModal(){
+    if(state.modal === 'profile'){
+      var me = state.currentUser;
+      return '<div class="modal-backdrop" id="modalBackdrop">' +
+        '<div class="modal">' +
+          '<h3 class="modal-title">Customize your profile</h3>' +
+          '<p class="modal-sub">This is how others in Beacon see you.</p>' +
+          '<div class="field"><label for="pDisplay">Display name</label><input id="pDisplay" value="' + escapeHtml(me.displayName) + '" /></div>' +
+          '<div class="field"><label>Avatar color</label><div class="swatch-row" id="swatchRow">' +
+            COLORS.map(function(c){ return '<div class="swatch' + (c===me.avatarColor?' selected':'') + '" data-color="' + c + '" style="background:' + c + '"></div>'; }).join('') +
+          '</div></div>' +
+          '<div class="field"><label>Avatar icon</label><div class="emoji-row" id="emojiRow">' +
+            EMOJIS.map(function(e){ return '<div class="emoji-opt' + (e===me.avatarEmoji?' selected':'') + '" data-emoji="' + e + '">' + e + '</div>'; }).join('') +
+          '</div></div>' +
+          '<div class="field"><label>Presence</label><div class="presence-opt-row" id="presenceRow">' +
+            PRESENCES.map(function(p){ return '<div class="presence-opt' + (p.key===me.presence?' selected':'') + '" data-presence="' + p.key + '"><span class="dot" style="background:' + p.color + '"></span>' + p.label + '</div>'; }).join('') +
+          '</div></div>' +
+          '<div class="field"><label for="pStatus">Custom status</label><input id="pStatus" maxlength="60" value="' + escapeHtml(me.statusText||'') + '" placeholder="What are you up to?" /></div>' +
+          '<div class="field"><label for="pBio">Bio</label><textarea id="pBio" rows="3" maxlength="200" placeholder="A short bio">' + escapeHtml(me.bio||'') + '</textarea></div>' +
+          '<div class="modal-close-row">' +
+            '<button class="btn btn-ghost btn-sm" id="modalCancelBtn">Cancel</button>' +
+            '<button class="btn btn-sm" id="modalSaveProfileBtn" style="width:auto;">Save changes</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    if(state.modal === 'addFriend'){
+      var reqs = state.requests;
+      return '<div class="modal-backdrop" id="modalBackdrop">' +
+        '<div class="modal">' +
+          '<h3 class="modal-title">Add a friend</h3>' +
+          '<p class="modal-sub">Enter someone\'s exact username to send a request.</p>' +
+          '<div class="field"><label for="addFriendInput">Username</label><input id="addFriendInput" placeholder="e.g. river_fox" /></div>' +
+          '<button class="btn btn-sm" id="sendReqBtn" style="width:100%;margin-bottom:6px;">Send request</button>' +
+          (reqs.length ?
+            '<div style="margin-top:18px;">' +
+              '<label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;">Pending requests to you</label>' +
+              reqs.map(function(r){
+                return '<div class="req-row"><span class="who">' + escapeHtml(r.displayName || r.from) + '</span>' +
+                  '<div class="req-actions">' +
+                    '<button class="btn btn-sm" data-accept="' + escapeHtml(r.from) + '" style="width:auto;">Accept</button>' +
+                    '<button class="btn btn-ghost btn-sm" data-decline="' + escapeHtml(r.from) + '" style="width:auto;">Decline</button>' +
+                  '</div>' +
+                '</div>';
+              }).join('') +
+            '</div>'
+          : '') +
+          '<div class="modal-close-row">' +
+            '<button class="btn btn-ghost btn-sm" id="modalCancelBtn">Close</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+    return '';
+  }
+
+  /* ============================= EVENT BINDING ============================= */
+  function bindAppEvents(){
+    var logoutBtn = document.getElementById('logoutBtn');
+    if(logoutBtn) logoutBtn.onclick = handleLogout;
+
+    var openProfileBtn = document.getElementById('openProfileBtn');
+    if(openProfileBtn) openProfileBtn.onclick = function(){ state.modal = 'profile'; render(); };
+
+    var openAddFriendBtn = document.getElementById('openAddFriendBtn');
+    if(openAddFriendBtn) openAddFriendBtn.onclick = function(){ state.modal = 'addFriend'; render(); };
+
+    var emptyAddFriendBtn = document.getElementById('emptyAddFriendBtn');
+    if(emptyAddFriendBtn) emptyAddFriendBtn.onclick = function(){ state.modal = 'addFriend'; render(); };
+
+    var openRequestsBtn = document.getElementById('openRequestsBtn');
+    if(openRequestsBtn) openRequestsBtn.onclick = function(){ state.modal = 'addFriend'; render(); };
+
+    var mobileBackBtn = document.getElementById('mobileBackBtn');
+    if(mobileBackBtn) mobileBackBtn.onclick = function(){ state.sidebarOpenMobile = true; render(); };
+
+    root.querySelectorAll('.dm-item[data-username]').forEach(function(el){
+      el.onclick = function(){
+        var uname = el.getAttribute('data-username');
+        var f = state.friends.filter(function(x){ return x.username === uname; })[0];
+        if(f) openConversation(f);
+      };
+    });
+
+    var sendBtn = document.getElementById('sendBtn');
+    var msgInput = document.getElementById('msgInput');
+    if(sendBtn && msgInput){
+      var doSend = function(){
+        var text = msgInput.value;
+        var file = state.pendingFile;
+        if(!text.trim() && !file) return;
+        sendMessage(text, file);
+        msgInput.value = '';
+      };
+      sendBtn.onclick = doSend;
+      msgInput.onkeydown = function(e){
+        if(e.key === 'Enter' && !e.shiftKey){
+          e.preventDefault();
+          doSend();
+        }
+      };
+      msgInput.focus();
+    }
+
+    var attachBtn = document.getElementById('attachBtn');
+    var fileInput = document.getElementById('fileInput');
+    if(attachBtn && fileInput){
+      attachBtn.onclick = function(){ fileInput.click(); };
+      fileInput.onchange = function(){
+        var f = fileInput.files[0];
+        if(!f) return;
+        if(f.size > 8*1024*1024){
+          showToast('That file is too big — keep attachments under 8 MB.');
+          return;
+        }
+        state.pendingFile = f;
+        render();
+      };
+    }
+    var removeFileBtn = document.getElementById('removeFileBtn');
+    if(removeFileBtn) removeFileBtn.onclick = function(){ state.pendingFile = null; render(); };
+
+    /* modal events */
+    var modalBackdrop = document.getElementById('modalBackdrop');
+    if(modalBackdrop){
+      modalBackdrop.addEventListener('mousedown', function(e){
+        if(e.target === modalBackdrop){ state.modal = null; render(); }
+      });
+    }
+    var modalCancelBtn = document.getElementById('modalCancelBtn');
+    if(modalCancelBtn) modalCancelBtn.onclick = function(){ state.modal = null; render(); };
+
+    if(state.modal === 'profile'){
+      var selColor = state.currentUser.avatarColor;
+      var selEmoji = state.currentUser.avatarEmoji;
+      var selPresence = state.currentUser.presence;
+      root.querySelectorAll('.swatch').forEach(function(sw){
+        sw.onclick = function(){ selColor = sw.getAttribute('data-color'); root.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('selected');}); sw.classList.add('selected'); };
+      });
+      root.querySelectorAll('.emoji-opt').forEach(function(em){
+        em.onclick = function(){ selEmoji = em.getAttribute('data-emoji'); root.querySelectorAll('.emoji-opt').forEach(function(s){s.classList.remove('selected');}); em.classList.add('selected'); };
+      });
+      root.querySelectorAll('.presence-opt').forEach(function(po){
+        po.onclick = function(){ selPresence = po.getAttribute('data-presence'); root.querySelectorAll('.presence-opt').forEach(function(s){s.classList.remove('selected');}); po.classList.add('selected'); };
+      });
+      var saveBtn = document.getElementById('modalSaveProfileBtn');
+      if(saveBtn){
+        saveBtn.onclick = function(){
+          saveProfile({
+            displayName: document.getElementById('pDisplay').value.trim() || state.currentUser.displayName,
+            avatarColor: selColor,
+            avatarEmoji: selEmoji,
+            presence: selPresence,
+            statusText: document.getElementById('pStatus').value.trim(),
+            bio: document.getElementById('pBio').value.trim()
+          });
+        };
+      }
+    }
+
+    if(state.modal === 'addFriend'){
+      var sendReqBtn = document.getElementById('sendReqBtn');
+      var addFriendInput = document.getElementById('addFriendInput');
+      if(sendReqBtn && addFriendInput){
+        sendReqBtn.onclick = function(){ sendFriendRequest(addFriendInput.value); };
+        addFriendInput.onkeydown = function(e){ if(e.key === 'Enter'){ sendFriendRequest(addFriendInput.value); } };
+        addFriendInput.focus();
+      }
+      root.querySelectorAll('[data-accept]').forEach(function(btn){
+        btn.onclick = function(){ acceptRequest(btn.getAttribute('data-accept')); };
+      });
+      root.querySelectorAll('[data-decline]').forEach(function(btn){
+        btn.onclick = function(){ declineRequest(btn.getAttribute('data-decline')); };
+      });
+    }
+  }
+
+  /* ============================= INIT ============================= */
+  render();
+  tryResumeSession();
+
+})();
+</script>
+</body>
+</html>
